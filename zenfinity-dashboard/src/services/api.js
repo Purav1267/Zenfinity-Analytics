@@ -1,7 +1,13 @@
 import axios from 'axios';
 
 const BASE_URL = '/api';
-export const ALLOWED_IMEIS = ['865044073967657', '865044073949366'];
+
+// Read IMEI numbers from environment variables
+const imeiString = import.meta.env.VITE_ALLOWED_IMEIS || '';
+export const ALLOWED_IMEIS = imeiString
+  .split(',')
+  .map((imei) => imei.trim())
+  .filter((imei) => imei.length > 0);
 
 const normalizeList = (payload) => {
   const items = Array.isArray(payload?.data)
