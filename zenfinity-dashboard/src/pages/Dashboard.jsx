@@ -713,6 +713,84 @@ const Dashboard = () => {
               </div>
             </div>
 
+            {/* Cycle Comparison & Performance - Cycle Specific */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Cycle Comparison */}
+              {previousCycle && (
+                <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
+                  <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+                    <BarChart3 size={18} className="mr-2 text-purple-500 dark:text-purple-300" /> vs Previous Cycle
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 dark:text-slate-400">SOH Drop</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-slate-900 dark:text-white">
+                          {previousCycle.soh_drop?.toFixed(2) ?? 0}%
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">→</span>
+                        <span className={`font-mono ${(cycleDetails.soh_drop ?? 0) > (previousCycle.soh_drop ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {cycleDetails.soh_drop?.toFixed(2) ?? 0}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 dark:text-slate-400">Avg Temp</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-slate-900 dark:text-white">
+                          {previousCycle.average_temperature?.toFixed(1) ?? '—'}°C
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">→</span>
+                        <span className="font-mono text-slate-900 dark:text-white">
+                          {cycleDetails.average_temperature?.toFixed(1) ?? '—'}°C
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 dark:text-slate-400">Distance</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-slate-900 dark:text-white">
+                          {previousCycle.total_distance?.toFixed(1) ?? '—'} km
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">→</span>
+                        <span className="font-mono text-slate-900 dark:text-white">
+                          {cycleDetails.total_distance?.toFixed(1) ?? '—'} km
+                        </span>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Previous: Cycle #{previousCycle.cycle_number}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Performance */}
+              <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+                  <Car size={18} className="mr-2 text-sky-500 dark:text-sky-300" /> Performance
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                    <p className="text-slate-500 dark:text-slate-400">Avg Speed</p>
+                    <p className="font-mono">{cycleDetails.average_speed ?? '—'} km/h</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                    <p className="text-slate-500 dark:text-slate-400">Data Points</p>
+                    <p className="font-mono">{cycleDetails.data_points_count?.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                    <p className="text-slate-500 dark:text-slate-400">Warnings</p>
+                    <p className="font-mono">{cycleDetails.warning_count ?? 0}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                    <p className="text-slate-500 dark:text-slate-400">Protections</p>
+                    <p className="font-mono">{cycleDetails.protection_count ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* ========== GENERALIZED INFORMATION (ALL CYCLES) ========== */}
             
             {/* Section Divider */}
@@ -994,106 +1072,6 @@ const Dashboard = () => {
                       <Bar dataKey="speed" name="Avg Speed (km/h)" fill="#22c55e" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Cycle Comparison */}
-              {previousCycle && (
-                <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
-                  <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
-                    <BarChart3 size={18} className="mr-2 text-purple-500 dark:text-purple-300" /> vs Previous Cycle
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 dark:text-slate-400">SOH Drop</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-slate-900 dark:text-white">
-                          {previousCycle.soh_drop?.toFixed(2) ?? 0}%
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">→</span>
-                        <span className={`font-mono ${(cycleDetails.soh_drop ?? 0) > (previousCycle.soh_drop ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                          {cycleDetails.soh_drop?.toFixed(2) ?? 0}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 dark:text-slate-400">Avg Temp</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-slate-900 dark:text-white">
-                          {previousCycle.average_temperature?.toFixed(1) ?? '—'}°C
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">→</span>
-                        <span className="font-mono text-slate-900 dark:text-white">
-                          {cycleDetails.average_temperature?.toFixed(1) ?? '—'}°C
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-500 dark:text-slate-400">Distance</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-slate-900 dark:text-white">
-                          {previousCycle.total_distance?.toFixed(1) ?? '—'} km
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">→</span>
-                        <span className="font-mono text-slate-900 dark:text-white">
-                          {cycleDetails.total_distance?.toFixed(1) ?? '—'} km
-                        </span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Previous: Cycle #{previousCycle.cycle_number}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
-                  <AlertTriangle size={18} className="mr-2 text-amber-500 dark:text-amber-300" /> Safety Events
-                </h3>
-                  {(!cycleDetails.alert_details?.warnings?.length && !cycleDetails.alert_details?.protections?.length) ? (
-                  <div className="text-emerald-700 flex items-center bg-emerald-500/10 p-3 rounded dark:text-emerald-300">
-                      <CheckCircle size={16} className="mr-2" /> No Issues Detected
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {cycleDetails.alert_details?.protections?.map((p, i) => (
-                      <div key={i} className="bg-red-500/10 text-red-700 text-sm p-2 rounded border border-red-500/20 dark:text-red-200">
-                          PROTECTION: {p}
-                        </div>
-                      ))}
-                      {cycleDetails.alert_details?.warnings?.map((w, i) => (
-                      <div key={i} className="bg-amber-500/10 text-amber-700 text-sm p-2 rounded border border-amber-500/20 dark:text-amber-200">
-                          WARNING: {w}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-              <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
-                  <Car size={18} className="mr-2 text-sky-500 dark:text-sky-300" /> Performance
-                </h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
-                    <p className="text-slate-500 dark:text-slate-400">Avg Speed</p>
-                    <p className="font-mono">{cycleDetails.average_speed ?? '—'} km/h</p>
-                  </div>
-                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
-                    <p className="text-slate-500 dark:text-slate-400">Data Points</p>
-                    <p className="font-mono">{cycleDetails.data_points_count}</p>
-                  </div>
-                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
-                    <p className="text-slate-500 dark:text-slate-400">Warnings</p>
-                    <p className="font-mono">{cycleDetails.warning_count ?? 0}</p>
-                  </div>
-                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
-                    <p className="text-slate-500 dark:text-slate-400">Protections</p>
-                    <p className="font-mono">{cycleDetails.protection_count ?? 0}</p>
-                  </div>
                 </div>
               </div>
             </div>
