@@ -87,7 +87,7 @@ const Dashboard = () => {
     enabled: !!selectedCycleId,
   });
 
-  // CSV Export function
+  // CSV Export function for single cycle
   const exportToCSV = () => {
     if (!cycleDetails) return;
     
@@ -136,6 +136,62 @@ const Dashboard = () => {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `cycle-${cycleDetails.cycle_number}-${imei}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // CSV Export function for all cycles
+  const exportAllCyclesToCSV = () => {
+    if (filteredCycles.length === 0) return;
+    
+    const headers = [
+      'Cycle Number', 'Start Time', 'End Time', 'Duration (hours)',
+      'SOH Drop (%)', 'Avg SOH (%)', 'Min SOH (%)', 'Max SOH (%)',
+      'Avg SOC (%)', 'Min SOC (%)', 'Max SOC (%)',
+      'Avg Temperature (°C)', 'Avg Voltage (V)', 'Min Voltage (V)', 'Max Voltage (V)',
+      'Avg Current (A)', 'Total Distance (km)', 'Avg Speed (km/h)', 'Max Speed (km/h)',
+      'Data Points', 'Charging Instances', 'Warnings', 'Protections'
+    ];
+    
+    const rows = filteredCycles.map(cycle => [
+      cycle.cycle_number,
+      new Date(cycle.cycle_start_time).toISOString(),
+      new Date(cycle.cycle_end_time).toISOString(),
+      cycle.cycle_duration_hours?.toFixed(2) ?? '',
+      cycle.soh_drop ?? 0,
+      cycle.average_soh?.toFixed(2) ?? '',
+      cycle.min_soh?.toFixed(2) ?? '',
+      cycle.max_soh?.toFixed(2) ?? '',
+      cycle.average_soc?.toFixed(2) ?? '',
+      cycle.min_soc ?? '',
+      cycle.max_soc ?? '',
+      cycle.average_temperature?.toFixed(2) ?? '',
+      cycle.voltage_avg?.toFixed(2) ?? '',
+      cycle.voltage_min?.toFixed(2) ?? '',
+      cycle.voltage_max?.toFixed(2) ?? '',
+      cycle.current_avg?.toFixed(2) ?? '',
+      cycle.total_distance?.toFixed(2) ?? '',
+      cycle.average_speed?.toFixed(2) ?? '',
+      cycle.max_speed ?? '',
+      cycle.data_points_count ?? '',
+      cycle.charging_instances_count ?? 0,
+      cycle.warning_count ?? 0,
+      cycle.protection_count ?? 0,
+    ].map(val => `"${val}"`).join(','));
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const filterSuffix = filteredCycles.length < cycles.length ? `-filtered-${filteredCycles.length}` : '';
+    link.setAttribute('download', `all-cycles-${imei}${filterSuffix}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -301,6 +357,19 @@ const Dashboard = () => {
           <p className="text-xs text-slate-500 mt-1 dark:text-slate-500">
             Showing {filteredCycles.length} of {cycleList?.count ?? cycles.length} cycles
           </p>
+          
+          {/* Export All Cycles Button */}
+          {filteredCycles.length > 0 && (
+            <button
+              onClick={exportAllCyclesToCSV}
+              className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors"
+              title={`Export ${filteredCycles.length} cycle(s) to CSV`}
+            >
+              <Download size={14} />
+              Export All ({filteredCycles.length}) to CSV
+            </button>
+          )}
+          
           <p className="text-xs text-slate-400 dark:text-slate-600 mt-2 flex items-center gap-1">
             <Info size={12} />
             Use ← → keys to navigate
