@@ -54,11 +54,12 @@ A comprehensive web-based analytics dashboard for visualizing battery cycle data
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Purav1267/Zenfinity-Analytics.git
-   cd Zenfinity-Analytics/zenfinity-dashboard
+   cd Zenfinity-Analytics
    ```
 
-2. **Install dependencies**
+2. **Navigate to dashboard directory and install dependencies**
    ```bash
+   cd zenfinity-dashboard
    npm install
    ```
 
@@ -125,7 +126,8 @@ npm run preview
 ## 🎨 Project Structure
 
 ```
-zenfinity-dashboard/
+Zenfinity-Analytics/
+├── zenfinity-dashboard/      # Main dashboard application
 ├── src/
 │   ├── components/          # Reusable components
 │   │   ├── KPICard.jsx     # KPI metric cards
