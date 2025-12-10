@@ -708,6 +708,97 @@ const Dashboard = () => {
               <KPICard title="Distance" value={cycleDetails.total_distance?.toFixed(1)} unit="km" color="blue" icon={Car} />
             </div>
 
+            {/* Battery Metrics - SOC, Voltage, Current, Charging */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* State of Charge (SOC) */}
+              <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+                  <Activity size={18} className="mr-2 text-sky-500 dark:text-sky-300" /> State of Charge (SOC)
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-slate-50 rounded-xl p-4 text-center border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Average</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{cycleDetails.average_soc?.toFixed(1) ?? '—'}%</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-4 text-center border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Minimum</p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">{cycleDetails.min_soc ?? '—'}%</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-4 text-center border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Maximum</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{cycleDetails.max_soc ?? '—'}%</p>
+                  </div>
+                </div>
+                {/* SOC Range Visualization */}
+                <div className="mt-4">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-slate-500 dark:text-slate-400 text-xs">SOC Range</span>
+                    <span className="text-xs text-slate-600 dark:text-slate-300">{cycleDetails.min_soc ?? 0}% - {cycleDetails.max_soc ?? 0}%</span>
+                  </div>
+                  <div className="relative h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className="absolute h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
+                      style={{ 
+                        left: `${cycleDetails.min_soc ?? 0}%`, 
+                        width: `${(cycleDetails.max_soc ?? 0) - (cycleDetails.min_soc ?? 0)}%` 
+                      }}
+                    />
+                    <div 
+                      className="absolute h-full w-0.5 bg-slate-900 dark:bg-white"
+                      style={{ left: `${cycleDetails.average_soc ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Voltage & Current Metrics */}
+              <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
+                  <Zap size={18} className="mr-2 text-amber-500 dark:text-amber-300" /> Voltage & Current
+                </h3>
+                <div className="space-y-4">
+                  {/* Voltage Metrics */}
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Voltage (V)</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Min</p>
+                        <p className="text-lg font-bold text-red-600 dark:text-red-400">{cycleDetails.voltage_min?.toFixed(1) ?? '—'}V</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Avg</p>
+                        <p className="text-lg font-bold text-slate-900 dark:text-white">{cycleDetails.voltage_avg?.toFixed(1) ?? '—'}V</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Max</p>
+                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{cycleDetails.voltage_max?.toFixed(1) ?? '—'}V</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Current & Charging */}
+                  <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Avg Current</p>
+                        <p className="text-lg font-bold text-slate-900 dark:text-white">{cycleDetails.current_avg?.toFixed(2) ?? '—'} A</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-xl p-3 text-center border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Charging Instances</p>
+                        <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{cycleDetails.charging_instances_count ?? 0}</p>
+                      </div>
+                    </div>
+                    {cycleDetails.average_charge_start_soc !== null && cycleDetails.average_charge_start_soc !== undefined && (
+                      <div className="mt-3 text-center">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Avg Charge Start SOC</p>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{cycleDetails.average_charge_start_soc?.toFixed(1)}%</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Cycle Stats - Moved up for better visibility */}
             <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
               <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
