@@ -260,4 +260,4 @@ This project is private and proprietary.
 
 ---
 
-Made with ❤️ for Zenfinity Battery Analytics
+Made for Zenfinity Battery Analytics
