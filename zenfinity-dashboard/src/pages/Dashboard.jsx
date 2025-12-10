@@ -39,13 +39,11 @@ const Dashboard = () => {
     queryFn: () => api.getSnapshots(imei),
   });
 
-  useEffect(() => {
-    const items = cycleList?.items ?? [];
-    if (items.length > 0 && !selectedCycleId) {
-      setSelectedCycleId(items[0].cycle_number);
-    }
-  }, [cycleList, selectedCycleId]);
+  // Don't auto-select a cycle - let user choose or view all cycles overview
 
+  // Get cycles list for keyboard navigation
+  const cycles = cycleList?.items ?? [];
+  
   // Keyboard shortcuts for cycle navigation
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -53,33 +51,47 @@ const Dashboard = () => {
         return; // Don't interfere with input fields
       }
 
-      const cycles = cycleList?.items ?? [];
       if (cycles.length === 0) return;
 
-      const currentIndex = cycles.findIndex(c => c.cycle_number === selectedCycleId);
+      const currentIndex = selectedCycleId 
+        ? cycles.findIndex(c => c.cycle_number === selectedCycleId)
+        : -1;
       
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         if (currentIndex > 0) {
           setSelectedCycleId(cycles[currentIndex - 1].cycle_number);
+        } else if (currentIndex === -1 && cycles.length > 0) {
+          // If no cycle selected, select the last one
+          setSelectedCycleId(cycles[cycles.length - 1].cycle_number);
         }
       } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
-        if (currentIndex < cycles.length - 1) {
+        if (currentIndex >= 0 && currentIndex < cycles.length - 1) {
           setSelectedCycleId(cycles[currentIndex + 1].cycle_number);
+        } else if (currentIndex === -1 && cycles.length > 0) {
+          // If no cycle selected, select the first one
+          setSelectedCycleId(cycles[0].cycle_number);
         }
       } else if (e.key === 'Home') {
         e.preventDefault();
-        setSelectedCycleId(cycles[0].cycle_number);
+        if (cycles.length > 0) {
+          setSelectedCycleId(cycles[0].cycle_number);
+        }
       } else if (e.key === 'End') {
         e.preventDefault();
-        setSelectedCycleId(cycles[cycles.length - 1].cycle_number);
+        if (cycles.length > 0) {
+          setSelectedCycleId(cycles[cycles.length - 1].cycle_number);
+        }
+      } else if (e.key === 'Escape' && selectedCycleId) {
+        e.preventDefault();
+        setSelectedCycleId(null);
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [cycleList, selectedCycleId]);
+  }, [cycles, selectedCycleId]);
 
   const { data: cycleDetails, isLoading: detailsLoading, dataUpdatedAt } = useQuery({
     queryKey: ['cycle', imei, selectedCycleId],
@@ -198,43 +210,9 @@ const Dashboard = () => {
     document.body.removeChild(link);
   };
 
-  // Detect anomalies
-  const detectAnomalies = (cycle) => {
-    if (!cycle) return [];
-    const anomalies = [];
-    
-    // High SOH drop
-    if (cycle.soh_drop > 5) {
-      anomalies.push({ type: 'warning', message: 'High SOH drop detected' });
-    }
-    
-    // High temperature
-    if (cycle.average_temperature > 40) {
-      anomalies.push({ type: 'warning', message: 'High average temperature' });
-    }
-    
-    // Low SOH
-    if (cycle.average_soh < 80) {
-      anomalies.push({ type: 'critical', message: 'Low battery health (SOH < 80%)' });
-    }
-    
-    // High protection count
-    if (cycle.protection_count > 0) {
-      anomalies.push({ type: 'critical', message: 'Protection events triggered' });
-    }
-    
-    // Unusual duration
-    const avgDuration = filteredCycles.reduce((sum, c) => sum + (c.cycle_duration_hours ?? 0), 0) / filteredCycles.length;
-    if (cycle.cycle_duration_hours && Math.abs(cycle.cycle_duration_hours - avgDuration) > avgDuration * 0.5) {
-      anomalies.push({ type: 'info', message: 'Unusual cycle duration' });
-    }
-    
-    return anomalies;
-  };
+  // Detect anomalies - will be defined after filteredCycles
 
   if (listLoading) return <div className="p-10 text-center text-slate-900 dark:text-white">Loading battery data...</div>;
-
-  const cycles = cycleList?.items ?? [];
   
   // Filter cycles based on search query, time period, and cycle number range
   const filteredCycles = cycles.filter((cycle) => {
@@ -298,6 +276,42 @@ const Dashboard = () => {
   const durations = cycles.map(c => c.cycle_duration_hours ?? 0).filter(d => d > 0).sort((a, b) => a - b);
   const minAvailableDuration = durations[0] ?? 0;
   const maxAvailableDuration = durations[durations.length - 1] ?? 0;
+
+  // Detect anomalies
+  const detectAnomalies = (cycle) => {
+    if (!cycle) return [];
+    const anomalies = [];
+    
+    // High SOH drop
+    if (cycle.soh_drop > 5) {
+      anomalies.push({ type: 'warning', message: 'High SOH drop detected' });
+    }
+    
+    // High temperature
+    if (cycle.average_temperature > 40) {
+      anomalies.push({ type: 'warning', message: 'High average temperature' });
+    }
+    
+    // Low SOH
+    if (cycle.average_soh < 80) {
+      anomalies.push({ type: 'critical', message: 'Low battery health (SOH < 80%)' });
+    }
+    
+    // High protection count
+    if (cycle.protection_count > 0) {
+      anomalies.push({ type: 'critical', message: 'Protection events triggered' });
+    }
+    
+    // Unusual duration
+    if (filteredCycles.length > 0) {
+      const avgDuration = filteredCycles.reduce((sum, c) => sum + (c.cycle_duration_hours ?? 0), 0) / filteredCycles.length;
+      if (cycle.cycle_duration_hours && Math.abs(cycle.cycle_duration_hours - avgDuration) > avgDuration * 0.5) {
+        anomalies.push({ type: 'info', message: 'Unusual cycle duration' });
+      }
+    }
+    
+    return anomalies;
+  };
 
   // Calculate aggregate stats based on filtered cycles
   const aggregateStats = filteredCycles.length > 0 ? {
@@ -534,7 +548,10 @@ const Dashboard = () => {
             return (
             <button
               key={cycle.cycle_number}
-              onClick={() => setSelectedCycleId(cycle.cycle_number)}
+              onClick={() => {
+                // Toggle: if already selected, deselect; otherwise select
+                setSelectedCycleId(isSelected ? null : cycle.cycle_number);
+              }}
                 className={`p-4 text-left border-b border-slate-200 transition-colors dark:border-slate-800 ${
                   isSelected ? 'bg-sky-50 border-l-4 border-l-sky-400 text-slate-900 dark:bg-sky-500/10 dark:text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
@@ -561,27 +578,27 @@ const Dashboard = () => {
       </aside>
 
       <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-        {!selectedCycleId ? (
-          <div className="text-slate-500 dark:text-slate-400">Select a cycle to view details</div>
-        ) : detailsLoading || !cycleDetails ? (
-          <div className="p-10">
-            <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
-              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
-                ))}
+        <div className="space-y-8">
+          {/* ========== CYCLE-SPECIFIC INFORMATION (TOP) ========== */}
+          {selectedCycleId && (
+            detailsLoading || !cycleDetails ? (
+              <div className="p-10">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* ========== CYCLE-SPECIFIC INFORMATION (TOP) ========== */}
+            ) : (
+              <div className="space-y-8">
             
             {/* Cycle Header */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
+              <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <p className="text-slate-500 text-sm dark:text-slate-400">Battery IMEI • {imei}</p>
                   {dataUpdatedAt && (
@@ -595,6 +612,15 @@ const Dashboard = () => {
                 <p className="text-slate-500 text-sm dark:text-slate-400">
                   {new Date(cycleDetails.cycle_start_time).toLocaleString()} — {new Date(cycleDetails.cycle_end_time).toLocaleString()}
                 </p>
+              </div>
+              <button
+                onClick={() => setSelectedCycleId(null)}
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors"
+                title="Deselect cycle and view all cycles overview"
+              >
+                <X size={16} />
+                Deselect Cycle
+              </button>
                 
                 {/* Anomaly Indicators */}
                 {(() => {
@@ -769,7 +795,7 @@ const Dashboard = () => {
               <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
                   <Car size={18} className="mr-2 text-sky-500 dark:text-sky-300" /> Performance
-                </h3>
+                  </h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
                     <p className="text-slate-500 dark:text-slate-400">Avg Speed</p>
@@ -790,10 +816,14 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+              </div>
+            )
+          )}
 
-            {/* ========== GENERALIZED INFORMATION (ALL CYCLES) ========== */}
-            
-            {/* Section Divider */}
+          {/* ========== GENERALIZED INFORMATION (ALL CYCLES) ========== */}
+          
+          {/* Section Divider - only show if cycle is selected */}
+          {selectedCycleId && (
             <div className="relative py-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
@@ -804,6 +834,15 @@ const Dashboard = () => {
                 </span>
               </div>
             </div>
+          )}
+
+          {/* Header for All Cycles Overview when no cycle is selected */}
+          {!selectedCycleId && (
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">All Cycles Overview</h1>
+              <p className="text-slate-500 text-sm dark:text-slate-400">Battery IMEI • {imei}</p>
+            </div>
+          )}
 
             {/* Quick Stats Summary - Aggregate for all cycles */}
             {aggregateStats && (
@@ -823,17 +862,17 @@ const Dashboard = () => {
                 <div className="bg-white dark:bg-slate-900/70 p-4 rounded-xl border border-slate-200 dark:border-slate-800 backdrop-blur">
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Avg Temp</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">{aggregateStats.avgTemp.toFixed(1)}°C</p>
-                </div>
+                    </div>
                 <div className="bg-white dark:bg-slate-900/70 p-4 rounded-xl border border-slate-200 dark:border-slate-800 backdrop-blur">
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Warnings</p>
                   <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{aggregateStats.totalWarnings}</p>
-                </div>
+                        </div>
                 <div className="bg-white dark:bg-slate-900/70 p-4 rounded-xl border border-slate-200 dark:border-slate-800 backdrop-blur">
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Protections</p>
                   <p className="text-2xl font-bold text-red-600 dark:text-red-400">{aggregateStats.totalProtections}</p>
-                </div>
-              </div>
-            )}
+                        </div>
+                    </div>
+                  )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
@@ -914,86 +953,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <TempChart snapshotData={cycleDetails} />
-              </div>
-
-              <div className="space-y-4">
-                <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
-                  <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
-                    <Activity size={18} className="mr-2 text-sky-500 dark:text-sky-400" /> State of Charge
-                  </h3>
-                  <div className="space-y-4 text-sm">
-                    {/* SOC Range Visualization */}
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-slate-500 dark:text-slate-400 text-xs">SOC Range</span>
-                        <span className="text-xs text-slate-600 dark:text-slate-300">{cycleDetails.min_soc}% - {cycleDetails.max_soc}%</span>
-                      </div>
-                      <div className="relative h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div 
-                          className="absolute h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                          style={{ 
-                            left: `${cycleDetails.min_soc}%`, 
-                            width: `${cycleDetails.max_soc - cycleDetails.min_soc}%` 
-                          }}
-                        />
-                        <div 
-                          className="absolute h-full w-0.5 bg-slate-900 dark:bg-white"
-                          style={{ left: `${cycleDetails.average_soc}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        <span>Min: {cycleDetails.min_soc}%</span>
-                        <span>Avg: {cycleDetails.average_soc?.toFixed(1)}%</span>
-                        <span>Max: {cycleDetails.max_soc}%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">Avg SOH</span>
-                        <span className="font-mono text-slate-900 dark:text-white">{cycleDetails.average_soh?.toFixed(1) ?? '—'}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">SOH Range</span>
-                        <span className="font-mono text-slate-900 dark:text-white">
-                          {cycleDetails.min_soh?.toFixed(1) ?? '—'}% - {cycleDetails.max_soh?.toFixed(1) ?? '—'}%
-                        </span>
-                    </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
-                  <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
-                    <Gauge size={18} className="mr-2 text-amber-500 dark:text-amber-300" /> Charge & Current
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Charge Starts (avg)</span>
-                      <span className="font-mono text-slate-900 dark:text-white">{cycleDetails.average_charge_start_soc?.toFixed(1) ?? '—'}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Charge Sessions</span>
-                      <span className="font-mono text-slate-900 dark:text-white">{cycleDetails.charging_instances_count ?? 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Avg Current</span>
-                      <span className="font-mono text-slate-900 dark:text-white">{cycleDetails.current_avg?.toFixed(2) ?? '—'} A</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Voltage Range</span>
-                      <span className="font-mono text-slate-900 dark:text-white">
-                        {cycleDetails.voltage_min?.toFixed(1) ?? '—'}V – {cycleDetails.voltage_max?.toFixed(1) ?? '—'}V
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Voltage & Current Trends */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
@@ -1038,7 +997,7 @@ const Dashboard = () => {
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
+                </div>
 
               <div className="rounded-2xl border p-6 bg-white shadow-sm text-slate-900 border-slate-200 dark:bg-slate-900/70 dark:border-slate-800 dark:text-white backdrop-blur">
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
@@ -1076,7 +1035,6 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-        )}
       </main>
     </div>
   );
