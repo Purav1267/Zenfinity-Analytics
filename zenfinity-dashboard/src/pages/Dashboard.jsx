@@ -824,6 +824,9 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* Temperature Distribution Chart */}
+            <TempChart snapshotData={cycleDetails} />
               </div>
             )
           )}
