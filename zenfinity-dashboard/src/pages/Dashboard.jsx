@@ -136,6 +136,7 @@ const Dashboard = () => {
       cycleDetails.charging_instances_count ?? 0,
       cycleDetails.warning_count ?? 0,
       cycleDetails.protection_count ?? 0,
+      cycleDetails.created_at ? new Date(cycleDetails.created_at).toISOString() : '',
     ];
     
     const csvContent = [
@@ -164,7 +165,7 @@ const Dashboard = () => {
       'Avg SOC (%)', 'Min SOC (%)', 'Max SOC (%)',
       'Avg Temperature (°C)', 'Avg Voltage (V)', 'Min Voltage (V)', 'Max Voltage (V)',
       'Avg Current (A)', 'Total Distance (km)', 'Avg Speed (km/h)', 'Max Speed (km/h)',
-      'Data Points', 'Charging Instances', 'Warnings', 'Protections'
+      'Data Points', 'Charging Instances', 'Warnings', 'Protections', 'Created At'
     ];
     
     const rows = filteredCycles.map(cycle => [
@@ -191,6 +192,7 @@ const Dashboard = () => {
       cycle.charging_instances_count ?? 0,
       cycle.warning_count ?? 0,
       cycle.protection_count ?? 0,
+      cycle.created_at ? new Date(cycle.created_at).toISOString() : '',
     ].map(val => `"${val}"`).join(','));
     
     const csvContent = [
@@ -649,7 +651,7 @@ const Dashboard = () => {
                 Deselect Cycle
               </button>
             </div>
-            
+
             <div className="flex flex-wrap gap-3">
                 {/* Export Button */}
                 <button
@@ -683,7 +685,7 @@ const Dashboard = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="relative group">
                 <KPICard title="Avg Voltage" value={cycleDetails.voltage_avg?.toFixed(1)} unit="V" color="orange" icon={Zap} />
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -711,7 +713,7 @@ const Dashboard = () => {
               <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
                 <Clock size={18} className="mr-2 text-purple-500 dark:text-purple-300" /> Cycle Stats
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 text-sm">
                 <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
                   <p className="text-slate-500 dark:text-slate-400">Cycle Number</p>
                   <p className="font-mono font-semibold">{cycleDetails.cycle_number}</p>
@@ -736,6 +738,12 @@ const Dashboard = () => {
                   <p className="text-slate-500 dark:text-slate-400">SOH Drop</p>
                   <p className="font-mono font-semibold">{cycleDetails.soh_drop ?? 0}%</p>
                 </div>
+                {cycleDetails.created_at && (
+                  <div className="bg-slate-50 rounded-xl p-3 text-slate-900 border border-slate-200 dark:bg-slate-800/70 dark:text-white dark:border-slate-700">
+                    <p className="text-slate-500 dark:text-slate-400">Recorded At</p>
+                    <p className="font-mono text-xs">{new Date(cycleDetails.created_at).toLocaleString()}</p>
+                  </div>
+                )}
               </div>
             </div>
 
