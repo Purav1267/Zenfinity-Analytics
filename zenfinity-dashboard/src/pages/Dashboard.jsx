@@ -612,15 +612,6 @@ const Dashboard = () => {
                 <p className="text-slate-500 text-sm dark:text-slate-400">
                   {new Date(cycleDetails.cycle_start_time).toLocaleString()} — {new Date(cycleDetails.cycle_end_time).toLocaleString()}
                 </p>
-              </div>
-              <button
-                onClick={() => setSelectedCycleId(null)}
-                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors"
-                title="Deselect cycle and view all cycles overview"
-              >
-                <X size={16} />
-                Deselect Cycle
-              </button>
                 
                 {/* Anomaly Indicators */}
                 {(() => {
@@ -649,7 +640,17 @@ const Dashboard = () => {
                   return null;
                 })()}
               </div>
-              <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setSelectedCycleId(null)}
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors"
+                title="Deselect cycle and view all cycles overview"
+              >
+                <X size={16} />
+                Deselect Cycle
+              </button>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
                 {/* Export Button */}
                 <button
                   onClick={exportToCSV}
@@ -679,11 +680,10 @@ const Dashboard = () => {
                 </span>
                 <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-700 text-sm flex items-center gap-2 dark:text-indigo-200">
                   <Clock size={16} /> {cycleDetails.cycle_duration_hours?.toFixed(2)} hrs
-              </span>
+                </span>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="relative group">
                 <KPICard title="Avg Voltage" value={cycleDetails.voltage_avg?.toFixed(1)} unit="V" color="orange" icon={Zap} />
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
