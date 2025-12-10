@@ -7,7 +7,8 @@ import KPICard from '../components/KPICard';
 import { 
   ArrowLeft, Clock, Zap, Activity, Thermometer, 
   Navigation, AlertTriangle, CheckCircle, Battery, Gauge, Car, TrendingUp,
-  Search, BarChart3, Shield, TrendingDown, Award, Target, Filter, X
+  Search, BarChart3, Shield, TrendingDown, Award, Target, Filter, X,
+  Download, Info, RefreshCw
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -45,11 +46,135 @@ const Dashboard = () => {
     }
   }, [cycleList, selectedCycleId]);
 
-  const { data: cycleDetails, isLoading: detailsLoading } = useQuery({
+  // Keyboard shortcuts for cycle navigation
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        return; // Don't interfere with input fields
+      }
+
+      const cycles = cycleList?.items ?? [];
+      if (cycles.length === 0) return;
+
+      const currentIndex = cycles.findIndex(c => c.cycle_number === selectedCycleId);
+      
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentIndex > 0) {
+          setSelectedCycleId(cycles[currentIndex - 1].cycle_number);
+        }
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentIndex < cycles.length - 1) {
+          setSelectedCycleId(cycles[currentIndex + 1].cycle_number);
+        }
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        setSelectedCycleId(cycles[0].cycle_number);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        setSelectedCycleId(cycles[cycles.length - 1].cycle_number);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [cycleList, selectedCycleId]);
+
+  const { data: cycleDetails, isLoading: detailsLoading, dataUpdatedAt } = useQuery({
     queryKey: ['cycle', imei, selectedCycleId],
     queryFn: () => api.getCycleDetails(imei, selectedCycleId),
     enabled: !!selectedCycleId,
   });
+
+  // CSV Export function
+  const exportToCSV = () => {
+    if (!cycleDetails) return;
+    
+    const headers = [
+      'Cycle Number', 'Start Time', 'End Time', 'Duration (hours)',
+      'SOH Drop (%)', 'Avg SOH (%)', 'Min SOH (%)', 'Max SOH (%)',
+      'Avg SOC (%)', 'Min SOC (%)', 'Max SOC (%)',
+      'Avg Temperature (°C)', 'Avg Voltage (V)', 'Min Voltage (V)', 'Max Voltage (V)',
+      'Avg Current (A)', 'Total Distance (km)', 'Avg Speed (km/h)', 'Max Speed (km/h)',
+      'Data Points', 'Charging Instances', 'Warnings', 'Protections'
+    ];
+    
+    const row = [
+      cycleDetails.cycle_number,
+      new Date(cycleDetails.cycle_start_time).toISOString(),
+      new Date(cycleDetails.cycle_end_time).toISOString(),
+      cycleDetails.cycle_duration_hours?.toFixed(2) ?? '',
+      cycleDetails.soh_drop ?? 0,
+      cycleDetails.average_soh?.toFixed(2) ?? '',
+      cycleDetails.min_soh?.toFixed(2) ?? '',
+      cycleDetails.max_soh?.toFixed(2) ?? '',
+      cycleDetails.average_soc?.toFixed(2) ?? '',
+      cycleDetails.min_soc ?? '',
+      cycleDetails.max_soc ?? '',
+      cycleDetails.average_temperature?.toFixed(2) ?? '',
+      cycleDetails.voltage_avg?.toFixed(2) ?? '',
+      cycleDetails.voltage_min?.toFixed(2) ?? '',
+      cycleDetails.voltage_max?.toFixed(2) ?? '',
+      cycleDetails.current_avg?.toFixed(2) ?? '',
+      cycleDetails.total_distance?.toFixed(2) ?? '',
+      cycleDetails.average_speed?.toFixed(2) ?? '',
+      cycleDetails.max_speed ?? '',
+      cycleDetails.data_points_count ?? '',
+      cycleDetails.charging_instances_count ?? 0,
+      cycleDetails.warning_count ?? 0,
+      cycleDetails.protection_count ?? 0,
+    ];
+    
+    const csvContent = [
+      headers.join(','),
+      row.map(val => `"${val}"`).join(',')
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `cycle-${cycleDetails.cycle_number}-${imei}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Detect anomalies
+  const detectAnomalies = (cycle) => {
+    if (!cycle) return [];
+    const anomalies = [];
+    
+    // High SOH drop
+    if (cycle.soh_drop > 5) {
+      anomalies.push({ type: 'warning', message: 'High SOH drop detected' });
+    }
+    
+    // High temperature
+    if (cycle.average_temperature > 40) {
+      anomalies.push({ type: 'warning', message: 'High average temperature' });
+    }
+    
+    // Low SOH
+    if (cycle.average_soh < 80) {
+      anomalies.push({ type: 'critical', message: 'Low battery health (SOH < 80%)' });
+    }
+    
+    // High protection count
+    if (cycle.protection_count > 0) {
+      anomalies.push({ type: 'critical', message: 'Protection events triggered' });
+    }
+    
+    // Unusual duration
+    const avgDuration = filteredCycles.reduce((sum, c) => sum + (c.cycle_duration_hours ?? 0), 0) / filteredCycles.length;
+    if (cycle.cycle_duration_hours && Math.abs(cycle.cycle_duration_hours - avgDuration) > avgDuration * 0.5) {
+      anomalies.push({ type: 'info', message: 'Unusual cycle duration' });
+    }
+    
+    return anomalies;
+  };
 
   if (listLoading) return <div className="p-10 text-center text-slate-900 dark:text-white">Loading battery data...</div>;
 
@@ -175,6 +300,10 @@ const Dashboard = () => {
           <p className="text-xs text-slate-500 dark:text-slate-500">IMEI: {imei}</p>
           <p className="text-xs text-slate-500 mt-1 dark:text-slate-500">
             Showing {filteredCycles.length} of {cycleList?.count ?? cycles.length} cycles
+          </p>
+          <p className="text-xs text-slate-400 dark:text-slate-600 mt-2 flex items-center gap-1">
+            <Info size={12} />
+            Use ← → keys to navigate
           </p>
           
           {/* Search Input */}
@@ -366,7 +495,17 @@ const Dashboard = () => {
         {!selectedCycleId ? (
           <div className="text-slate-500 dark:text-slate-400">Select a cycle to view details</div>
         ) : detailsLoading || !cycleDetails ? (
-          <div className="p-10 text-slate-600 dark:text-slate-300">Loading cycle details...</div>
+          <div className="p-10">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                ))}
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="space-y-8">
             {/* ========== CYCLE-SPECIFIC INFORMATION (TOP) ========== */}
@@ -374,13 +513,57 @@ const Dashboard = () => {
             {/* Cycle Header */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <p className="text-slate-500 text-sm dark:text-slate-400">Battery IMEI • {imei}</p>
+                <div className="flex items-center gap-3 mb-2">
+                  <p className="text-slate-500 text-sm dark:text-slate-400">Battery IMEI • {imei}</p>
+                  {dataUpdatedAt && (
+                    <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                      <RefreshCw size={12} />
+                      Updated {new Date(dataUpdatedAt).toLocaleTimeString()}
+                    </span>
+                  )}
+                </div>
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white mt-1">Cycle #{cycleDetails.cycle_number}</h1>
                 <p className="text-slate-500 text-sm dark:text-slate-400">
                   {new Date(cycleDetails.cycle_start_time).toLocaleString()} — {new Date(cycleDetails.cycle_end_time).toLocaleString()}
                 </p>
+                
+                {/* Anomaly Indicators */}
+                {(() => {
+                  const anomalies = detectAnomalies(cycleDetails);
+                  if (anomalies.length > 0) {
+                    return (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {anomalies.map((anomaly, idx) => (
+                          <span
+                            key={idx}
+                            className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
+                              anomaly.type === 'critical' 
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                : anomaly.type === 'warning'
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                            }`}
+                          >
+                            <AlertTriangle size={12} />
+                            {anomaly.message}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               <div className="flex flex-wrap gap-3">
+                {/* Export Button */}
+                <button
+                  onClick={exportToCSV}
+                  className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm flex items-center gap-2 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 transition-colors"
+                  title="Export cycle data to CSV"
+                >
+                  <Download size={14} />
+                  Export CSV
+                </button>
                 {/* Battery Health Score */}
                 {(() => {
                   const healthScore = calculateHealthScore(cycleDetails);
@@ -406,8 +589,24 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <KPICard title="Avg Voltage" value={cycleDetails.voltage_avg?.toFixed(1)} unit="V" color="orange" icon={Zap} />
-              <KPICard title="Avg Temp" value={cycleDetails.average_temperature?.toFixed(1)} unit="°C" color="red" icon={Thermometer} />
+              <div className="relative group">
+                <KPICard title="Avg Voltage" value={cycleDetails.voltage_avg?.toFixed(1)} unit="V" color="orange" icon={Zap} />
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-slate-900 text-white text-xs rounded-lg px-2 py-1 shadow-lg max-w-xs">
+                    Average voltage during the cycle. Normal range: 3.0V - 4.2V per cell.
+                    <div className="absolute -bottom-1 right-4 w-2 h-2 bg-slate-900 rotate-45"></div>
+                  </div>
+                </div>
+              </div>
+              <div className="relative group">
+                <KPICard title="Avg Temp" value={cycleDetails.average_temperature?.toFixed(1)} unit="°C" color="red" icon={Thermometer} />
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <div className="bg-slate-900 text-white text-xs rounded-lg px-2 py-1 shadow-lg max-w-xs">
+                    Average battery temperature. Optimal: 20-30°C. High temps reduce battery life.
+                    <div className="absolute -bottom-1 right-4 w-2 h-2 bg-slate-900 rotate-45"></div>
+                  </div>
+                </div>
+              </div>
               <KPICard title="Max Speed" value={cycleDetails.max_speed} unit="km/h" color="green" icon={Navigation} />
               <KPICard title="Distance" value={cycleDetails.total_distance?.toFixed(1)} unit="km" color="blue" icon={Car} />
             </div>
