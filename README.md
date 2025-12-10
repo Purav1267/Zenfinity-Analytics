@@ -230,14 +230,6 @@ The dashboard supports both light and dark themes:
 - Check `tailwind.config.js` for correct content paths
 - Verify PostCSS configuration
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📝 License
-
-This project is private and proprietary.
-
 ## 👥 Author
 
 **Purav Malik**
@@ -245,6 +237,7 @@ This project is private and proprietary.
 
 ## 🔗 Links
 
+- **Live Demo**: [Zenfinity Analytics Dashboard](https://zenfinity-analytics.vercel.app/)
 - **Repository**: [Zenfinity-Analytics](https://github.com/Purav1267/Zenfinity-Analytics.git)
 - **API Endpoint**: `https://zenfinity-intern-api-104290304048.europe-west1.run.app`
 
