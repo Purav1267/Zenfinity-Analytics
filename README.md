@@ -87,14 +87,9 @@ A comprehensive web-based analytics dashboard for visualizing battery cycle data
 
 4. **Configure allowed IMEIs** (if needed)
    
-   Create a `.env` file in the `zenfinity-dashboard` directory:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` to add your IMEI numbers (comma-separated):
-   ```
-   VITE_ALLOWED_IMEIS=imei1,imei2,imei3
+   Edit `src/services/api.js` to add or modify allowed IMEIs:
+   ```javascript
+   export const ALLOWED_IMEIS = ['imei1', 'imei2'];
    ```
 
 ## 🚀 Getting Started
