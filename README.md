@@ -2,6 +2,8 @@
 
 A comprehensive web-based analytics dashboard for visualizing battery cycle data, performance metrics, and health indicators for Zenfinity battery systems.
 
+🌐 **Live Demo**: [https://zenfinity-analytics.vercel.app/](https://zenfinity-analytics.vercel.app/)
+
 ![Zenfinity Analytics](https://img.shields.io/badge/version-1.0.0-blue)
 ![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react)
 ![Vite](https://img.shields.io/badge/Vite-7.2.4-646CFF?logo=vite)
@@ -237,7 +239,6 @@ The dashboard supports both light and dark themes:
 
 ## 🔗 Links
 
-- **Live Demo**: [Zenfinity Analytics Dashboard](https://zenfinity-analytics.vercel.app/)
 - **Repository**: [Zenfinity-Analytics](https://github.com/Purav1267/Zenfinity-Analytics.git)
 - **API Endpoint**: `https://zenfinity-intern-api-104290304048.europe-west1.run.app`
 
